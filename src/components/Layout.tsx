@@ -4,6 +4,7 @@ import { Bell, Coins } from 'lucide-react';
 import { usePoints } from '../context/PointsContext';
 import NameModal from './NameModal';
 import Banner from './Banner';
+import { auth } from '../lib/firebase';
 
 const Layout = () => {
   const [name, setName] = useState<string>('');
@@ -18,11 +19,17 @@ const Layout = () => {
   };
 
   useEffect(() => {
-    const savedName = localStorage.getItem('userName');
-    if (savedName) {
-      setName(savedName);
-      setShowModal(false);
-    }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user?.displayName) {
+        setName(user.displayName);
+        setShowModal(false);
+        localStorage.setItem('userName', user.displayName);
+      } else {
+        setShowModal(true);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const isHomePage = location.pathname === '/';
@@ -69,4 +76,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default Layout

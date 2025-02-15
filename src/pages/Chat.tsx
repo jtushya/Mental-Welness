@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles, AlertTriangle } from 'lucide-react';
+import { Menu, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles } from 'lucide-react';
 import MoodSelector from '../components/MoodSelector';
 import { usePoints } from '../context/PointsContext';
 import BreathingExercise from '../components/BreathingExercise';
 import RelaxationExercise from '../components/RelaxationExercise';
 import ChatSidebar from '../components/ChatSidebar';
+import ChatMessage from '../components/ChatMessage';
 import { getChatResponse, detectCrisis, CRISIS_RESPONSE } from '../lib/gemini';
 
 interface Message {
@@ -97,7 +98,6 @@ const Chat = () => {
     setInputMessage('');
     setIsTyping(true);
 
-    // Check for crisis keywords
     if (detectCrisis(content)) {
       const crisisMessage: Message = {
         id: `crisis-${Date.now()}`,
@@ -226,25 +226,12 @@ const Chat = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[80%] rounded-lg p-4 ${
-                    message.sender === 'user'
-                      ? 'bg-purple-500 text-white'
-                      : message.isCrisis
-                      ? 'bg-red-50 border-2 border-red-200 text-gray-800'
-                      : message.isError
-                      ? 'bg-orange-50 border border-orange-200 text-gray-800'
-                      : 'bg-white text-gray-800'
-                  }`}
-                >
-                  {message.isCrisis && (
-                    <div className="flex items-center gap-2 mb-2 text-red-600">
-                      <AlertTriangle className="w-5 h-5" />
-                      <span className="font-medium">Crisis Support Available</span>
-                    </div>
-                  )}
-                  {message.content}
-                </div>
+                <ChatMessage
+                  content={message.content}
+                  sender={message.sender}
+                  isCrisis={message.isCrisis}
+                  isError={message.isError}
+                />
               </motion.div>
             ))}
             {isTyping && (
