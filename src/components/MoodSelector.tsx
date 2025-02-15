@@ -54,36 +54,29 @@ const moods: Mood[] = [
   },
 ];
 
-interface MoodEntry {
-  mood: string;
-  timestamp: string;
+interface MoodSelectorProps {
+  onMoodSelect?: (mood: string) => void;
 }
 
-const MoodSelector = () => {
+const MoodSelector: React.FC<MoodSelectorProps> = ({ onMoodSelect }) => {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
-
-  useEffect(() => {
-    const savedMoodHistory = localStorage.getItem('moodHistory');
-    if (savedMoodHistory) {
-      setMoodHistory(JSON.parse(savedMoodHistory));
-    }
-  }, []);
 
   const handleMoodSelect = (mood: string) => {
     setSelectedMood(mood);
+    if (onMoodSelect) {
+      onMoodSelect(mood);
+    }
     const newMoodEntry = {
       mood,
       timestamp: new Date().toISOString(),
     };
+    const moodHistory = JSON.parse(localStorage.getItem('moodHistory') || '[]');
     const updatedHistory = [...moodHistory, newMoodEntry];
-    setMoodHistory(updatedHistory);
     localStorage.setItem('moodHistory', JSON.stringify(updatedHistory));
   };
 
   return (
     <div className="bg-white rounded-xl shadow-md p-3">
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">How are you feeling?</h3>
       <div className="grid grid-cols-5 gap-1.5">
         {moods.map(({ icon: Icon, label, color, bgColor, borderColor, selectedBg }) => {
           const isSelected = selectedMood === label;
@@ -107,12 +100,6 @@ const MoodSelector = () => {
           );
         })}
       </div>
-      
-      {selectedMood && (
-        <div className="mt-2 text-xs text-gray-600">
-          Last updated: {new Date(moodHistory[moodHistory.length - 1]?.timestamp).toLocaleTimeString()}
-        </div>
-      )}
     </div>
   );
 };
