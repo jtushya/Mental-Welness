@@ -82,9 +82,9 @@ const MoodSelector = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4">
-      <h3 className="text-lg font-semibold text-gray-800 mb-3">How are you feeling?</h3>
-      <div className="grid grid-cols-5 gap-2">
+    <div className="bg-white rounded-xl shadow-md p-3">
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">How are you feeling?</h3>
+      <div className="grid grid-cols-5 gap-1.5">
         {moods.map(({ icon: Icon, label, color, bgColor, borderColor, selectedBg }) => {
           const isSelected = selectedMood === label;
           return (
@@ -94,12 +94,12 @@ const MoodSelector = () => {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleMoodSelect(label)}
               className={`
-                aspect-square rounded-lg border transition-all duration-200
-                flex flex-col items-center justify-center gap-1 p-1.5
+                rounded-lg border transition-all duration-200
+                flex flex-col items-center justify-center gap-1 py-2
                 ${isSelected ? `${selectedBg} border-white` : `${bgColor} ${borderColor}`}
               `}
             >
-              <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : color}`} />
+              <Icon className={`w-8 h-8 ${isSelected ? 'text-white' : color}`} />
               <span className={`text-[10px] font-medium ${isSelected ? 'text-white' : 'text-gray-600'}`}>
                 {label}
               </span>
