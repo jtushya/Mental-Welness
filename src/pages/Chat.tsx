@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, Send, Smile, X, ChevronRight, Brain, Wind, Book } from 'lucide-react';
+import { Menu, Settings, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles } from 'lucide-react';
 import MoodSelector from '../components/MoodSelector';
 import { usePoints } from '../context/PointsContext';
+import BreathingExercise from '../components/BreathingExercise';
+import RelaxationExercise from '../components/RelaxationExercise';
 
 interface Message {
   id: string;
@@ -15,40 +17,85 @@ interface QuickAction {
   icon: React.ReactNode;
   label: string;
   action: () => void;
+  gradient: string;
+  hoverGradient: string;
 }
+
+interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+  provider: string;
+}
+
+const aiModels: AIModel[] = [
+  {
+    id: 'gpt-4',
+    name: 'GPT-4',
+    description: 'Most capable model, best for complex tasks',
+    provider: 'OpenAI'
+  },
+  {
+    id: 'gpt-3.5-turbo',
+    name: 'GPT-3.5 Turbo',
+    description: 'Fast and efficient for most tasks',
+    provider: 'OpenAI'
+  },
+  {
+    id: 'claude-2',
+    name: 'Claude 2',
+    description: 'Advanced reasoning and analysis',
+    provider: 'Anthropic'
+  },
+  {
+    id: 'palm-2',
+    name: 'PaLM 2',
+    description: 'Efficient for general tasks',
+    provider: 'Google'
+  }
+];
 
 const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([{
-    id: '1',
+    id: 'initial-message',
     content: "Hi! How are you feeling today? Select your mood above to help me understand better.",
     sender: 'ai',
     timestamp: new Date()
   }]);
   const [inputMessage, setInputMessage] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [activeExercise, setActiveExercise] = useState<'breathing' | 'relaxation' | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-4');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addPoints } = usePoints();
 
   const quickActions: QuickAction[] = [
     {
-      icon: <Brain className="w-4 h-4" />,
+      icon: <Lotus className="w-5 h-5" />,
       label: "Start Relaxation",
+      gradient: "from-indigo-500 to-purple-500",
+      hoverGradient: "from-indigo-600 to-purple-600",
       action: () => {
-        sendMessage("I'd like to do a relaxation exercise.");
+        setActiveExercise('relaxation');
       }
     },
     {
-      icon: <Wind className="w-4 h-4" />,
+      icon: <Wind className="w-5 h-5" />,
       label: "Breathing Exercise",
+      gradient: "from-cyan-500 to-blue-500",
+      hoverGradient: "from-cyan-600 to-blue-600",
       action: () => {
-        sendMessage("Can we do a breathing exercise?");
+        setActiveExercise('breathing');
       }
     },
     {
-      icon: <Book className="w-4 h-4" />,
+      icon: <Pencil className="w-5 h-5" />,
       label: "Journal Entry",
+      gradient: "from-amber-500 to-orange-500",
+      hoverGradient: "from-amber-600 to-orange-600",
       action: () => {
         sendMessage("I'd like to write in my journal.");
       }
@@ -66,28 +113,28 @@ const Chat = () => {
   const sendMessage = async (content: string = inputMessage) => {
     if (!content.trim()) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
       content,
       sender: 'user',
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
 
     // Simulate AI response
     setTimeout(() => {
       const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `ai-${Date.now()}`,
         content: "I understand how you're feeling. Let's work through this together. Would you like to try a breathing exercise or talk about what's on your mind?",
         sender: 'ai',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiResponse]);
       setIsTyping(false);
-      addPoints(5); // Reward user for engaging in conversation
+      addPoints(5);
     }, 2000);
   };
 
@@ -98,9 +145,8 @@ const Chat = () => {
 
   const handleMoodSelect = (mood: string) => {
     setSelectedMood(mood);
-    // Send a message acknowledging the mood
     const moodMessage: Message = {
-      id: Date.now().toString(),
+      id: `mood-${Date.now()}`,
       content: `I see you're feeling ${mood.toLowerCase()}. How can I help you today?`,
       sender: 'ai',
       timestamp: new Date()
@@ -108,9 +154,35 @@ const Chat = () => {
     setMessages(prev => [...prev, moodMessage]);
   };
 
+  const handleExerciseComplete = () => {
+    setActiveExercise(null);
+    addPoints(activeExercise === 'breathing' ? 10 : 15);
+    const completionMessage: Message = {
+      id: `exercise-complete-${Date.now()}`,
+      content: `Great job completing the ${activeExercise} exercise! How do you feel now?`,
+      sender: 'ai',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, completionMessage]);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const sidebar = document.getElementById('sidebar');
+      const menuButton = document.getElementById('menu-button');
+      
+      if (sidebar && !sidebar.contains(event.target as Node) && 
+          menuButton && !menuButton.contains(event.target as Node)) {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-purple-50 to-blue-50">
-      {/* Animated background patterns */}
+    <div className="relative min-h-screen flex">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute inset-0 opacity-5"
@@ -128,141 +200,204 @@ const Chat = () => {
         />
       </div>
 
-      {/* Main chat container */}
-      <div className="relative h-screen flex">
-        {/* Sidebar */}
-        <AnimatePresence>
-          {isSidebarOpen && (
-            <motion.div
-              initial={{ x: -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white/80 backdrop-blur-md shadow-lg z-20"
-            >
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800">Menu</h2>
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            id="sidebar"
+            initial={{ x: -300 }}
+            animate={{ x: 0 }}
+            exit={{ x: -300 }}
+            className="fixed inset-y-0 left-0 w-72 bg-white/80 backdrop-blur-md shadow-lg z-20"
+          >
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">Menu</h2>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">AI Model</h3>
+                  <div className="space-y-2">
+                    {aiModels.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => setSelectedModel(model.id)}
+                        className={`w-full p-3 text-left rounded-lg transition-colors ${
+                          selectedModel === model.id
+                            ? 'bg-purple-50 border border-purple-200'
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-gray-800">{model.name}</span>
+                          <span className="text-xs text-gray-500">{model.provider}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{model.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Chats</h3>
+                  <div className="space-y-2">
+                    {['Yesterday', 'Morning Session', 'Last Week'].map((chat) => (
+                      <button
+                        key={chat}
+                        className="w-full p-2 text-left hover:bg-purple-50 rounded-lg transition-colors"
+                      >
+                        {chat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-600 mb-2">Settings</h3>
+                  <button 
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-full p-2 text-left hover:bg-purple-50 rounded-lg transition-colors flex items-center space-x-2"
                   >
-                    <X className="w-5 h-5 text-gray-600" />
+                    <Settings className="w-5 h-5 text-gray-600" />
+                    <span>Preferences</span>
                   </button>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                <div className="space-y-6">
-                  {/* Chat History */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-600 mb-2">Recent Chats</h3>
-                    <div className="space-y-2">
-                      {['Yesterday', 'Morning Session', 'Last Week'].map((chat) => (
-                        <button
-                          key={chat}
-                          className="w-full p-2 text-left hover:bg-purple-50 rounded-lg transition-colors"
-                        >
-                          {chat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Settings */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-600 mb-2">Settings</h3>
-                    <button className="w-full p-2 text-left hover:bg-purple-50 rounded-lg transition-colors flex items-center space-x-2">
-                      <Settings className="w-5 h-5 text-gray-600" />
-                      <span>Preferences</span>
-                    </button>
-                  </div>
+      <div className="flex-1 flex flex-col min-h-screen max-w-7xl mx-auto w-full">
+        <div className="fixed top-0 left-0 right-0 z-10 bg-white/80 backdrop-blur-sm shadow-sm">
+          <div className="max-w-7xl mx-auto">
+            <div className="p-4 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Menu className="w-5 h-5 text-gray-600" />
+                </button>
+                
+                <div className="flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-lg">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm font-medium text-purple-700">
+                    {aiModels.find(m => m.id === selectedModel)?.name}
+                  </span>
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col h-full">
-          {/* Header */}
-          <div className="bg-white/80 backdrop-blur-sm shadow-sm">
-            <div className="p-4 flex items-center justify-between">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
+              
               {selectedMood && (
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Smile className="w-4 h-4" />
                   <span>Feeling {selectedMood}</span>
                 </div>
               )}
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 <Settings className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-            <div className="px-4 pb-4">
-              <MoodSelector onMoodSelect={handleMoodSelect} />
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-4 ${
-                    message.sender === 'user'
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-white text-gray-800'
-                  }`}
-                >
-                  {message.content}
-                </div>
-              </motion.div>
-            ))}
-            {isTyping && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex justify-start"
-              >
-                <div className="bg-white rounded-lg p-4">
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      transition: { duration: 1, repeat: Infinity },
-                    }}
-                  >
-                    Typing...
-                  </motion.div>
-                </div>
-              </motion.div>
+            {!selectedMood && (
+              <div className="px-4 pb-4">
+                <MoodSelector onMoodSelect={handleMoodSelect} />
+              </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
+        </div>
 
-          {/* Quick actions */}
-          <div className="bg-white/80 backdrop-blur-sm p-2 flex space-x-2 overflow-x-auto">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 mt-[88px]">
+          {messages.map((message) => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg p-4 ${
+                  message.sender === 'user'
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-white text-gray-800'
+                }`}
+              >
+                {message.content}
+              </div>
+            </motion.div>
+          ))}
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start"
+            >
+              <div className="bg-white rounded-lg p-4">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    transition: { duration: 1, repeat: Infinity },
+                  }}
+                >
+                  Typing...
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <AnimatePresence>
+          {activeExercise && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            >
+              {activeExercise === 'breathing' ? (
+                <BreathingExercise
+                  onComplete={handleExerciseComplete}
+                  onClose={() => setActiveExercise(null)}
+                />
+              ) : (
+                <RelaxationExercise
+                  onComplete={handleExerciseComplete}
+                  onClose={() => setActiveExercise(null)}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm border-t">
+          <div className="p-3 flex space-x-3 overflow-x-auto">
             {quickActions.map((action, index) => (
-              <button
+              <motion.button
                 key={index}
                 onClick={action.action}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-full hover:bg-purple-100 transition-colors whitespace-nowrap text-sm"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white shadow-md transition-all duration-200 bg-gradient-to-r ${action.gradient} hover:${action.hoverGradient}`}
               >
-                {action.icon}
-                <span>{action.label}</span>
-              </button>
+                <div className="p-1 bg-white/20 rounded-full">
+                  {action.icon}
+                </div>
+                <span className="font-medium">{action.label}</span>
+              </motion.button>
             ))}
           </div>
 
-          {/* Input area */}
-          <div className="bg-white/80 backdrop-blur-sm border-t p-4">
+          <div className="p-4">
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto flex space-x-4">
               <input
                 type="text"
