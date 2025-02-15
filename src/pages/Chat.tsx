@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles } from 'lucide-react';
+import { Menu, Settings, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles, AlertTriangle } from 'lucide-react';
 import MoodSelector from '../components/MoodSelector';
 import { usePoints } from '../context/PointsContext';
 import BreathingExercise from '../components/BreathingExercise';
 import RelaxationExercise from '../components/RelaxationExercise';
 import ChatSidebar from '../components/ChatSidebar';
+import { getChatResponse, detectCrisis, CRISIS_RESPONSE } from '../lib/gemini';
 
 interface Message {
   id: string;
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  isError?: boolean;
+  isCrisis?: boolean;
 }
 
 interface QuickAction {
@@ -34,7 +37,7 @@ const Chat = () => {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [activeExercise, setActiveExercise] = useState<'breathing' | 'relaxation' | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-4');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-pro');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addPoints } = usePoints();
 
@@ -94,18 +97,42 @@ const Chat = () => {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
+    // Check for crisis keywords
+    if (detectCrisis(content)) {
+      const crisisMessage: Message = {
+        id: `crisis-${Date.now()}`,
+        content: CRISIS_RESPONSE,
+        sender: 'ai',
+        timestamp: new Date(),
+        isCrisis: true
+      };
+      setMessages(prev => [...prev, crisisMessage]);
+      setIsTyping(false);
+      return;
+    }
+
+    try {
+      const response = await getChatResponse(content, selectedMood);
+      const aiMessage: Message = {
         id: `ai-${Date.now()}`,
-        content: "I understand how you're feeling. Let's work through this together. Would you like to try a breathing exercise or talk about what's on your mind?",
+        content: response,
         sender: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
+      setMessages(prev => [...prev, aiMessage]);
       addPoints(5);
-    }, 2000);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
+        sender: 'ai',
+        timestamp: new Date(),
+        isError: true
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,13 +142,7 @@ const Chat = () => {
 
   const handleMoodSelect = (mood: string) => {
     setSelectedMood(mood);
-    const moodMessage: Message = {
-      id: `mood-${Date.now()}`,
-      content: `I see you're feeling ${mood.toLowerCase()}. How can I help you today?`,
-      sender: 'ai',
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, moodMessage]);
+    sendMessage(`I'm feeling ${mood.toLowerCase()} today.`);
   };
 
   const handleExerciseComplete = () => {
@@ -136,7 +157,6 @@ const Chat = () => {
     setMessages(prev => [...prev, completionMessage]);
   };
 
-  // Close sidebar when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const sidebar = document.getElementById('sidebar');
@@ -162,7 +182,6 @@ const Chat = () => {
       />
 
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Fixed Header */}
         <div className="fixed top-0 left-0 right-0 z-50">
           <div className="bg-white/80 backdrop-blur-md shadow-sm border-b">
             <div className="p-4 flex items-center justify-between max-w-6xl mx-auto w-full">
@@ -198,7 +217,6 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Messages with padding for header and input box */}
         <div className="flex-1 overflow-y-auto pt-[76px] pb-[160px] p-4 space-y-4">
           <div className="max-w-6xl mx-auto w-full space-y-4">
             {messages.map((message) => (
@@ -212,9 +230,19 @@ const Chat = () => {
                   className={`max-w-[80%] rounded-lg p-4 ${
                     message.sender === 'user'
                       ? 'bg-purple-500 text-white'
+                      : message.isCrisis
+                      ? 'bg-red-50 border-2 border-red-200 text-gray-800'
+                      : message.isError
+                      ? 'bg-orange-50 border border-orange-200 text-gray-800'
                       : 'bg-white text-gray-800'
                   }`}
                 >
+                  {message.isCrisis && (
+                    <div className="flex items-center gap-2 mb-2 text-red-600">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Crisis Support Available</span>
+                    </div>
+                  )}
                   {message.content}
                 </div>
               </motion.div>
@@ -241,7 +269,6 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Fixed Quick Actions and Input */}
         <div className="fixed bottom-0 left-0 right-0 border-t bg-white/80 backdrop-blur-sm z-50">
           <div className="max-w-6xl mx-auto w-full">
             <div className="p-3 flex space-x-3 overflow-x-auto">
@@ -283,7 +310,6 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Exercises Modal */}
       <AnimatePresence>
         {activeExercise && (
           <motion.div
