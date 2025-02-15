@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../lib/firebase';
 
 interface NameModalProps {
   isOpen: boolean;
@@ -6,14 +8,17 @@ interface NameModalProps {
 }
 
 const NameModal: React.FC<NameModalProps> = ({ isOpen, onSubmit }) => {
-  const [inputName, setInputName] = useState('');
-
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputName.trim()) {
-      onSubmit(inputName);
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      if (user.displayName) {
+        onSubmit(user.displayName);
+      }
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
     }
   };
 
@@ -21,28 +26,17 @@ const NameModal: React.FC<NameModalProps> = ({ isOpen, onSubmit }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 transform transition-all">
         <h2 className="text-2xl font-semibold text-gray-800 mb-6">Welcome to MindfulAI</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              What's your name?
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={inputName}
-              onChange={(e) => setInputName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Enter your name"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2 px-4 rounded-md hover:from-purple-700 hover:to-indigo-700 transition-all duration-200"
-          >
-            Get Started
-          </button>
-        </form>
+        <button
+          onClick={handleGoogleSignIn}
+          className="w-full flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-50 transition-all duration-200 mb-4"
+        >
+          <img
+            src="https://www.google.com/favicon.ico"
+            alt="Google"
+            className="w-5 h-5"
+          />
+          <span>Continue with Google</span>
+        </button>
       </div>
     </div>
   );
