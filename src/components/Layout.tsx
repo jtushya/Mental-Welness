@@ -83,6 +83,23 @@ const Layout = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-menu') && showUserMenu) {
+        setShowUserMenu(false);
+      }
+      if (!target.closest('.notifications-menu') && showNotifications) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu, showNotifications]);
+
   const isHomePage = location.pathname === '/';
   const isChatPage = location.pathname === '/chat';
 
@@ -131,7 +148,7 @@ const Layout = () => {
                 </div>
 
                 {/* User Menu */}
-                <div className="relative">
+                <div className="relative user-menu">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="relative"
@@ -160,7 +177,7 @@ const Layout = () => {
                 </div>
 
                 {/* Notifications */}
-                <div className="relative">
+                <div className="relative notifications-menu">
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
                     className="relative p-1 rounded-full hover:bg-gray-100 transition-colors"
