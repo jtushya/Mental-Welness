@@ -96,7 +96,7 @@ const Layout = () => {
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-4">
                 <h1 className="text-2xl font-semibold text-purple-800">
-                  Welcome, {name || 'Guest'}
+                  Welcome, <span className="font-bold">{name || 'Guest'}</span>
                 </h1>
               </div>
               <div className="flex items-center space-x-4">
@@ -195,6 +195,20 @@ const Layout = () => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Outlet />
       </div>
+
+      <footer className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-center py-4 mt-8">
+        <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-lg font-semibold">Made by Tushya Jain</p>
+          </div>
+          <div>
+            <p className="text-sm">mail: <a href="mailto:techtushya@gmail.com" className="underline">techtushya@gmail.com</a></p>
+          </div>
+          <div>
+            <p className="text-sm">github: <a href="https://github.com/jtushya" target="_blank" rel="noopener noreferrer" className="underline">github.com/jtushya</a></p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

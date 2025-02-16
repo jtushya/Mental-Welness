@@ -1,6 +1,6 @@
-# MindfulAI - Mental Health & Wellness Platform
+# Mental Health & Wellness Platform
 
-MindfulAI is a comprehensive mental health and wellness platform that combines AI-powered chat support, guided exercises, and mood tracking to help users maintain their mental well-being.
+This project is a comprehensive mental health and wellness platform that combines AI-powered chat support, guided exercises, and mood tracking to help users maintain their mental well-being.
 
 ## Features
 
@@ -93,13 +93,8 @@ src/
 4. Push to the branch
 5. Create a Pull Request
 
-## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
-
-For support, please contact our team or visit the support section in the application.
 
 ## Acknowledgments
 
