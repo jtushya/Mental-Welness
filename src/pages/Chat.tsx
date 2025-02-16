@@ -54,6 +54,7 @@ const Chat = () => {
       gradient: "from-indigo-500 to-purple-500",
       hoverGradient: "from-indigo-600 to-purple-600",
       action: () => {
+        setShowMoodSelector(false);
         setActiveExercise('relaxation');
         addPoints(15);
       }
@@ -64,6 +65,7 @@ const Chat = () => {
       gradient: "from-cyan-500 to-blue-500",
       hoverGradient: "from-cyan-600 to-blue-600",
       action: () => {
+        setShowMoodSelector(false);
         setActiveExercise('breathing');
         addPoints(10);
       }
@@ -74,6 +76,7 @@ const Chat = () => {
       gradient: "from-amber-500 to-orange-500",
       hoverGradient: "from-amber-600 to-orange-600",
       action: () => {
+        setShowMoodSelector(false);
         sendMessage("I'd like to write in my journal.");
       }
     }
@@ -146,6 +149,7 @@ const Chat = () => {
       }]);
       setShowHistory(false);
       setSelectedTopic(null);
+      setShowMoodSelector(true);
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
@@ -158,6 +162,7 @@ const Chat = () => {
         setCurrentSessionId(sessionId);
         setMessages(session.messages);
         setShowHistory(false);
+        setShowMoodSelector(false);
       }
     } catch (error) {
       console.error('Error loading chat session:', error);
@@ -166,6 +171,7 @@ const Chat = () => {
 
   const handleTopicSelect = async (topicId: string) => {
     setSelectedTopic(topicId);
+    setShowMoodSelector(false);
     const topic = CHAT_TOPICS.find(t => t.id === topicId);
     
     let initialMessage = '';
@@ -194,6 +200,8 @@ const Chat = () => {
 
   const sendMessage = async (content: string = inputMessage) => {
     if (!content.trim() || !auth.currentUser || !isAuthenticated) return;
+
+    setShowMoodSelector(false);
 
     if (!currentSessionId) {
       try {
