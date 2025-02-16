@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles, History, Plus, MessageSquare, Brain, Heart, Users } from 'lucide-react';
+import { Menu, Send, Smile, X, Bot as Lotus, Wind, Book, Sparkles, History, Plus, MessageSquare, Brain, Heart, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import MoodSelector from '../components/MoodSelector';
 import { usePoints } from '../context/PointsContext';
@@ -8,6 +8,8 @@ import BreathingExercise from '../components/BreathingExercise';
 import RelaxationExercise from '../components/RelaxationExercise';
 import ChatSidebar from '../components/ChatSidebar';
 import ChatMessage from '../components/ChatMessage';
+import JournalEntry from '../components/JournalEntry';
+import BackgroundAnimation from '../components/BackgroundAnimation';
 import { getChatResponse, detectCrisis, CRISIS_RESPONSE } from '../lib/gemini';
 import { auth } from '../lib/firebase';
 import { saveChatMessage, getChatSessions, createNewSession, getChatSession } from '../lib/chat';
@@ -44,6 +46,7 @@ const Chat = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [showJournal, setShowJournal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addPoints } = usePoints();
 
@@ -71,13 +74,13 @@ const Chat = () => {
       }
     },
     {
-      icon: <Pencil className="w-5 h-5" />,
+      icon: <Book className="w-5 h-5" />,
       label: "Journal Entry",
       gradient: "from-amber-500 to-orange-500",
       hoverGradient: "from-amber-600 to-orange-600",
       action: () => {
         setShowMoodSelector(false);
-        sendMessage("I'd like to write in my journal.");
+        setShowJournal(true);
       }
     }
   ];
@@ -299,6 +302,52 @@ const Chat = () => {
     setMessages(prev => [...prev, completionMessage]);
   };
 
+  const handleJournalSave = async (entry: string) => {
+    setShowJournal(false);
+    const journalMessage: Message = {
+      id: `journal-${Date.now()}`,
+      content: `I wrote in my journal today: ${entry}`,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, journalMessage]);
+    
+    if (currentSessionId) {
+      await saveChatMessage(currentSessionId, journalMessage);
+    }
+    
+    setIsTyping(true);
+    
+    try {
+      const response = await getChatResponse(
+        `I just wrote this in my journal: ${entry}. Can you provide some supportive feedback and insights about my entry?`,
+        selectedMood,
+        selectedTopic,
+        userName
+      );
+      
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        content: response,
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      
+      if (currentSessionId) {
+        await saveChatMessage(currentSessionId, aiMessage);
+      }
+      
+      addPoints(20);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -309,6 +358,7 @@ const Chat = () => {
 
   return (
     <div className="relative min-h-screen flex">
+      <BackgroundAnimation />
       <ChatSidebar 
         isOpen={isSidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -549,6 +599,22 @@ const Chat = () => {
                 onClose={() => setActiveExercise(null)}
               />
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showJournal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[80] p-4"
+          >
+            <JournalEntry
+              onClose={() => setShowJournal(false)}
+              onSave={handleJournalSave}
+            />
           </motion.div>
         )}
       </AnimatePresence>

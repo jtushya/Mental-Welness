@@ -9,7 +9,7 @@ const Banner = () => {
           <div className="flex items-center space-x-2">
             <Sparkles className="w-5 h-5" />
             <p className="text-sm font-medium">
-              New Feature: AI-powered mood tracking coming soon!
+              New: AI-powered mood tracking, breathing exercises, and mindfulness content library now available!
             </p>
           </div>
           <button className="text-sm underline hover:text-purple-200 transition-colors">
