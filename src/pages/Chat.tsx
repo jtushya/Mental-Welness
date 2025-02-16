@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles, History, Plus, MessageSquare } from 'lucide-react';
+import { Menu, Send, Smile, X, Bot as Lotus, Wind, Pencil, Sparkles, History, Plus, MessageSquare, Brain, Heart, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import MoodSelector from '../components/MoodSelector';
 import { usePoints } from '../context/PointsContext';
@@ -13,16 +13,27 @@ import { auth } from '../lib/firebase';
 import { saveChatMessage, getChatSessions, createNewSession, getChatSession } from '../lib/chat';
 import type { Message, ChatSession } from '../types';
 
+const CHAT_TOPICS = [
+  { id: 'general', label: 'Just Chat', icon: MessageSquare, description: 'Talk freely about anything on your mind' },
+  { id: 'anxiety', label: 'Anxiety', icon: Brain, description: 'Discuss anxiety and stress-related concerns' },
+  { id: 'relationships', label: 'Relationships', icon: Users, description: 'Talk about relationship challenges' },
+  { id: 'diagnosis', label: 'Symptom Check', icon: Heart, description: 'Discuss symptoms and get information' }
+];
+
+const MOOD_COLORS = {
+  'Loved': 'text-pink-500',
+  'Happy': 'text-green-500',
+  'Okay': 'text-yellow-500',
+  'Sad': 'text-blue-500',
+  'Excited': 'text-purple-500'
+};
+
 const Chat = () => {
-  const [messages, setMessages] = useState<Message[]>([{
-    id: 'initial-message',
-    content: "Hi! How are you feeling today? Select your mood above to help me understand better.",
-    sender: 'ai',
-    timestamp: new Date()
-  }]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [showMoodSelector, setShowMoodSelector] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [activeExercise, setActiveExercise] = useState<'breathing' | 'relaxation' | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('gemini-pro');
@@ -31,21 +42,75 @@ const Chat = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addPoints } = usePoints();
+
+  const quickActions = [
+    {
+      icon: <Lotus className="w-5 h-5" />,
+      label: "Start Relaxation",
+      gradient: "from-indigo-500 to-purple-500",
+      hoverGradient: "from-indigo-600 to-purple-600",
+      action: () => {
+        setActiveExercise('relaxation');
+        addPoints(15);
+      }
+    },
+    {
+      icon: <Wind className="w-5 h-5" />,
+      label: "Breathing Exercise",
+      gradient: "from-cyan-500 to-blue-500",
+      hoverGradient: "from-cyan-600 to-blue-600",
+      action: () => {
+        setActiveExercise('breathing');
+        addPoints(10);
+      }
+    },
+    {
+      icon: <Pencil className="w-5 h-5" />,
+      label: "Journal Entry",
+      gradient: "from-amber-500 to-orange-500",
+      hoverGradient: "from-amber-600 to-orange-600",
+      action: () => {
+        sendMessage("I'd like to write in my journal.");
+      }
+    }
+  ];
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setIsAuthenticated(!!user);
-      if (user && !currentSessionId) {
-        createNewSession(user.uid)
-          .then(sessionId => setCurrentSessionId(sessionId))
-          .catch(console.error);
+      if (user) {
+        setUserName(user.displayName || '');
+        if (!currentSessionId) {
+          createNewSession(user.uid)
+            .then(sessionId => setCurrentSessionId(sessionId))
+            .catch(console.error);
+        }
       }
     });
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !selectedTopic) {
+      setMessages([{
+        id: 'initial-message',
+        content: `Hi${userName ? ` ${userName}` : ''}! How can I help you today? You can choose a specific topic to discuss, or we can just chat about whatever's on your mind.`,
+        sender: 'ai',
+        timestamp: new Date()
+      }]);
+    }
+  }, [isAuthenticated, userName]);
+
+  const getCurrentTopicLabel = () => {
+    if (!selectedTopic) return 'General Chat';
+    const topic = CHAT_TOPICS.find(t => t.id === selectedTopic);
+    return topic ? `${topic.label} Chat` : 'General Chat';
+  };
 
   const loadChatSessions = async () => {
     if (!auth.currentUser) return;
@@ -75,11 +140,12 @@ const Chat = () => {
       setCurrentSessionId(sessionId);
       setMessages([{
         id: 'initial-message',
-        content: "Hi! How are you feeling today? Select your mood above to help me understand better.",
+        content: `Hi${userName ? ` ${userName}` : ''}! How can I help you today?`,
         sender: 'ai',
         timestamp: new Date()
       }]);
       setShowHistory(false);
+      setSelectedTopic(null);
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
@@ -98,10 +164,37 @@ const Chat = () => {
     }
   };
 
+  const handleTopicSelect = async (topicId: string) => {
+    setSelectedTopic(topicId);
+    const topic = CHAT_TOPICS.find(t => t.id === topicId);
+    
+    let initialMessage = '';
+    switch (topicId) {
+      case 'general':
+        initialMessage = `I'm here to listen and chat with you${userName ? `, ${userName}` : ''}. How are you feeling today?`;
+        break;
+      case 'anxiety':
+        initialMessage = `Let's talk about what's causing you anxiety${userName ? `, ${userName}` : ''}. Can you tell me more about what you're experiencing?`;
+        break;
+      case 'relationships':
+        initialMessage = `I'm here to discuss any relationship concerns you have${userName ? `, ${userName}` : ''}. What's on your mind?`;
+        break;
+      case 'diagnosis':
+        initialMessage = `I can help you understand your symptoms${userName ? `, ${userName}` : ''}. Please describe what you're experiencing, but remember I can't provide medical diagnosis - only information and guidance.`;
+        break;
+    }
+
+    setMessages([{
+      id: `topic-${topicId}`,
+      content: initialMessage,
+      sender: 'ai',
+      timestamp: new Date()
+    }]);
+  };
+
   const sendMessage = async (content: string = inputMessage) => {
     if (!content.trim() || !auth.currentUser || !isAuthenticated) return;
 
-    // Create new session if none exists
     if (!currentSessionId) {
       try {
         const sessionId = await createNewSession(auth.currentUser.uid);
@@ -144,7 +237,7 @@ const Chat = () => {
         return;
       }
 
-      const response = await getChatResponse(content, selectedMood);
+      const response = await getChatResponse(content, selectedMood, selectedTopic, userName);
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
         content: response,
@@ -180,6 +273,7 @@ const Chat = () => {
 
   const handleMoodSelect = (mood: string) => {
     setSelectedMood(mood);
+    setShowMoodSelector(false);
     if (isAuthenticated) {
       sendMessage(`I'm feeling ${mood.toLowerCase()} today.`);
     }
@@ -196,36 +290,6 @@ const Chat = () => {
     };
     setMessages(prev => [...prev, completionMessage]);
   };
-
-  const quickActions = [
-    {
-      icon: <Lotus className="w-5 h-5" />,
-      label: "Start Relaxation",
-      gradient: "from-indigo-500 to-purple-500",
-      hoverGradient: "from-indigo-600 to-purple-600",
-      action: () => {
-        setActiveExercise('relaxation');
-      }
-    },
-    {
-      icon: <Wind className="w-5 h-5" />,
-      label: "Breathing Exercise",
-      gradient: "from-cyan-500 to-blue-500",
-      hoverGradient: "from-cyan-600 to-blue-600",
-      action: () => {
-        setActiveExercise('breathing');
-      }
-    },
-    {
-      icon: <Pencil className="w-5 h-5" />,
-      label: "Journal Entry",
-      gradient: "from-amber-500 to-orange-500",
-      hoverGradient: "from-amber-600 to-orange-600",
-      action: () => {
-        sendMessage("I'd like to write in my journal.");
-      }
-    }
-  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -245,9 +309,9 @@ const Chat = () => {
       />
 
       <div className="flex-1 flex flex-col min-h-screen">
-        <div className="fixed top-0 left-0 right-0 z-50">
+        <div className="fixed top-0 left-0 right-0 z-[60]">
           <div className="bg-white/80 backdrop-blur-md shadow-sm border-b">
-            <div className="p-4 flex items-center justify-between max-w-6xl mx-auto w-full">
+            <div className="p-4 flex items-center justify-between max-w-7xl mx-auto w-full">
               <button
                 onClick={() => setSidebarOpen(prev => !prev)}
                 className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
@@ -261,9 +325,17 @@ const Chat = () => {
                 <div className="flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-lg">
                   <Sparkles className="w-4 h-4 text-purple-500" />
                   <span className="text-sm font-medium text-purple-700">
-                    {selectedModel.toUpperCase()}
+                    {getCurrentTopicLabel()}
                   </span>
                 </div>
+                {selectedMood && (
+                  <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg">
+                    <Smile className={`w-4 h-4 ${MOOD_COLORS[selectedMood as keyof typeof MOOD_COLORS]}`} />
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedMood}
+                    </span>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowHistory(!showHistory)}
                   className={`p-2 rounded-lg transition-colors ${
@@ -273,86 +345,36 @@ const Chat = () => {
                   <History className="w-5 h-5" />
                 </button>
               </div>
-
-              {selectedMood && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Smile className="w-4 h-4" />
-                  <span>Feeling {selectedMood}</span>
-                </div>
-              )}
             </div>
-            {!selectedMood && (
-              <div className="px-4 pb-4 max-w-6xl mx-auto w-full">
-                <MoodSelector onMoodSelect={handleMoodSelect} />
-              </div>
-            )}
           </div>
         </div>
 
-        <AnimatePresence>
-          {showHistory && (
-            <motion.div
-              initial={{ opacity: 0, x: '100%' }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: '100%' }}
-              className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-lg z-40 overflow-y-auto"
-            >
-              <div className="p-4 border-b sticky top-0 bg-white z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Chat History</h3>
-                  <button
-                    onClick={() => setShowHistory(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full"
-                  >
-                    <X className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-                <button
-                  onClick={startNewChat}
-                  className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>New Chat</span>
-                </button>
-              </div>
-              
-              <div className="p-4 space-y-2">
-                {isLoadingHistory ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
-                  </div>
-                ) : chatSessions.length > 0 ? (
-                  chatSessions.map((session) => (
-                    <button
-                      key={session.id}
-                      onClick={() => loadChatSession(session.id)}
-                      className={`w-full p-3 rounded-lg hover:bg-purple-50 transition-colors text-left flex items-start space-x-3 ${
-                        session.id === currentSessionId ? 'bg-purple-50' : ''
-                      }`}
+        <div className="flex-1 overflow-y-auto pt-[60px] pb-[220px] p-4">
+          <div className="max-w-7xl mx-auto w-full space-y-4">
+            {!selectedTopic && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {CHAT_TOPICS.map((topic) => {
+                  const Icon = topic.icon;
+                  return (
+                    <motion.button
+                      key={topic.id}
+                      onClick={() => handleTopicSelect(topic.id)}
+                      whileHover={{ scale: 1.02 }}
+                      className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all"
                     >
-                      <MessageSquare className="w-5 h-5 text-purple-500 mt-1" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-800 truncate">
-                          {session.title}
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="p-2 bg-purple-50 rounded-lg">
+                          <Icon className="w-5 h-5 text-purple-600" />
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {format(new Date(session.updatedAt), 'MMM d, yyyy h:mm a')}
-                        </div>
+                        <span className="font-medium text-gray-800">{topic.label}</span>
                       </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No chat history available
-                  </div>
-                )}
+                      <p className="text-sm text-gray-600">{topic.description}</p>
+                    </motion.button>
+                  );
+                })}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
 
-        <div className="flex-1 overflow-y-auto pt-[76px] pb-[160px] p-4 space-y-4">
-          <div className="max-w-6xl mx-auto w-full space-y-4">
             {messages.map((message) => (
               <motion.div
                 key={message.id}
@@ -391,7 +413,13 @@ const Chat = () => {
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 border-t bg-white/80 backdrop-blur-sm" style={{ zIndex: 30 }}>
-          <div className="max-w-3xl mx-auto w-full">
+          <div className="max-w-7xl mx-auto w-full">
+            {showMoodSelector && (
+              <div className="px-4 pt-4">
+                <MoodSelector onMoodSelect={handleMoodSelect} />
+              </div>
+            )}
+
             <div className="p-3 flex space-x-3 overflow-x-auto">
               {quickActions.map((action, index) => (
                 <motion.button
@@ -399,7 +427,7 @@ const Chat = () => {
                   onClick={action.action}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white shadow-md transition-all duration-200 bg-gradient-to-r ${action.gradient} hover:${action.hoverGradient}`}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white shadow-md transition-all duration-200 bg-gradient-to-r ${action.gradient} hover:bg-gradient-to-r hover:${action.hoverGradient}`}
                 >
                   <div className="p-1 bg-white/20 rounded-full">
                     {action.icon}
@@ -433,12 +461,74 @@ const Chat = () => {
       </div>
 
       <AnimatePresence>
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-lg z-[70] overflow-y-auto"
+          >
+            <div className="p-4 border-b sticky top-0 bg-white z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Chat History</h3>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+              <button
+                onClick={startNewChat}
+                className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Chat</span>
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-2">
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+                </div>
+              ) : chatSessions.length > 0 ? (
+                chatSessions.map((session) => (
+                  <button
+                    key={session.id}
+                    onClick={() => loadChatSession(session.id)}
+                    className={`w-full p-3 rounded-lg hover:bg-purple-50 transition-colors text-left flex items-start space-x-3 ${
+                      session.id === currentSessionId ? 'bg-purple-50' : ''
+                    }`}
+                  >
+                    <MessageSquare className="w-5 h-5 text-purple-500 mt-1" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800 truncate">
+                        {session.title}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {format(new Date(session.updatedAt), 'MMM d, yyyy h:mm a')}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No chat history available
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {activeExercise && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[80]"
           >
             {activeExercise === 'breathing' ? (
               <BreathingExercise

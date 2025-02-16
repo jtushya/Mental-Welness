@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const TherapistCard = () => {
+  const navigate = useNavigate();
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -19,7 +22,10 @@ const TherapistCard = () => {
         <div>
           <h3 className="text-2xl font-bold text-white mb-2">Talk to AI Therapist</h3>
           <p className="text-white/90 mb-4">Share your thoughts and feelings in a safe space</p>
-          <button className="bg-white text-purple-600 px-6 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-opacity-90 transition-colors">
+          <button 
+            onClick={() => navigate('/chat')}
+            className="bg-white text-purple-600 px-6 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-opacity-90 transition-colors"
+          >
             <MessageCircle className="w-5 h-5" />
             Start Conversation
           </button>

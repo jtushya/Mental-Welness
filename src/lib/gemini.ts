@@ -10,16 +10,41 @@ const MENTAL_HEALTH_CONTEXT = `You are an empathetic AI mental health companion.
 - Never give medical advice or diagnoses
 - Always maintain a calm, understanding tone
 - If user expresses serious crisis/suicide thoughts, immediately provide crisis hotline numbers
-- Focus on emotional support and practical wellness tips`;
+- Focus on emotional support and practical wellness tips
+- Personalize responses using the user's name when available
+- For anxiety discussions:
+  - Help identify triggers
+  - Teach grounding techniques
+  - Suggest breathing exercises
+- For relationship discussions:
+  - Focus on communication strategies
+  - Explore emotions and perspectives
+  - Encourage healthy boundaries
+- For symptom discussions:
+  - Gather information carefully
+  - Provide general health information
+  - ALWAYS recommend consulting healthcare professionals
+  - Never provide diagnosis
+  - Focus on lifestyle and wellness tips`;
 
-export async function getChatResponse(message: string, mood?: string) {
+export async function getChatResponse(message: string, mood?: string, topic?: string, userName?: string) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     let prompt = MENTAL_HEALTH_CONTEXT;
+    
+    if (userName) {
+      prompt += `\nThe user's name is ${userName}.`;
+    }
+    
     if (mood) {
       prompt += `\nThe user has indicated they are feeling ${mood.toLowerCase()}.`;
     }
+    
+    if (topic) {
+      prompt += `\nThe conversation topic is: ${topic}`;
+    }
+    
     prompt += `\nUser message: ${message}`;
 
     const result = await model.generateContent(prompt);
