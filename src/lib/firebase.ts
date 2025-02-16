@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,4 +13,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Initialize Firestore with persistence
+import { enableIndexedDbPersistence } from 'firebase/firestore';
+
+try {
+  enableIndexedDbPersistence(db);
+} catch (err) {
+  console.error('Firestore persistence error:', err);
+}

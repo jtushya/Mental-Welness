@@ -4,7 +4,8 @@ import { Bell, Coins } from 'lucide-react';
 import { usePoints } from '../context/PointsContext';
 import NameModal from './NameModal';
 import Banner from './Banner';
-import { auth } from '../lib/firebase';
+import { auth, googleProvider } from '../lib/firebase';
+import { getRedirectResult } from 'firebase/auth';
 
 const Layout = () => {
   const [name, setName] = useState<string>('');
@@ -19,6 +20,19 @@ const Layout = () => {
   };
 
   useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user?.displayName) {
+          handleNameSubmit(result.user.displayName);
+        }
+      } catch (error) {
+        console.error('Error handling redirect result:', error);
+      }
+    };
+
+    handleRedirectResult();
+
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user?.displayName) {
         setName(user.displayName);
@@ -76,4 +90,4 @@ const Layout = () => {
   );
 };
 
-export default Layout
+export default Layout;
