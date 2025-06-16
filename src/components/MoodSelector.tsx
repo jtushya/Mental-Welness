@@ -76,8 +76,8 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({ onMoodSelect }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-3">
-      <div className="grid grid-cols-5 gap-1.5">
+    <div className="bg-white rounded-xl shadow-md p-2 md:p-3">
+      <div className="grid grid-cols-5 gap-1 md:gap-1.5">
         {moods.map(({ icon: Icon, label, color, bgColor, borderColor, selectedBg }) => {
           const isSelected = selectedMood === label;
           return (
@@ -88,12 +88,12 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({ onMoodSelect }) => {
               onClick={() => handleMoodSelect(label)}
               className={`
                 rounded-lg border transition-all duration-200
-                flex flex-col items-center justify-center gap-1 py-2
+                flex flex-col items-center justify-center gap-1 py-2 md:py-2
                 ${isSelected ? `${selectedBg} border-white` : `${bgColor} ${borderColor}`}
               `}
             >
-              <Icon className={`w-8 h-8 ${isSelected ? 'text-white' : color}`} />
-              <span className={`text-[10px] font-medium ${isSelected ? 'text-white' : 'text-gray-600'}`}>
+              <Icon className={`w-6 h-6 md:w-8 md:h-8 ${isSelected ? 'text-white' : color}`} />
+              <span className={`text-[9px] md:text-[10px] font-medium ${isSelected ? 'text-white' : 'text-gray-600'}`}>
                 {label}
               </span>
             </motion.button>

@@ -1,6 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// Check if API key is available
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.error('VITE_GEMINI_API_KEY is not set in environment variables');
+}
+
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const MENTAL_HEALTH_CONTEXT = `You are an empathetic AI mental health companion. Your role is to:
 - Provide supportive, non-judgmental responses
@@ -28,8 +35,13 @@ const MENTAL_HEALTH_CONTEXT = `You are an empathetic AI mental health companion.
   - Focus on lifestyle and wellness tips`;
 
 export async function getChatResponse(message: string, mood?: string, topic?: string, userName?: string) {
+  if (!genAI) {
+    console.error('Gemini AI is not initialized - API key missing');
+    return "I apologize, but I'm currently unable to respond due to a configuration issue. Please check that the AI service is properly set up.";
+  }
+
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     let prompt = MENTAL_HEALTH_CONTEXT;
     
@@ -49,9 +61,27 @@ export async function getChatResponse(message: string, mood?: string, topic?: st
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text();
+    const text = response.text();
+    
+    if (!text || text.trim() === '') {
+      throw new Error('Empty response from AI');
+    }
+    
+    return text;
   } catch (error) {
     console.error('Error getting chat response:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('API_KEY')) {
+        return "I apologize, but there's an issue with the AI service configuration. Please contact support.";
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        return "I'm currently experiencing high demand. Please try again in a few moments.";
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        return "I'm having trouble connecting right now. Please check your internet connection and try again.";
+      }
+    }
+    
     return "I apologize, but I'm having trouble responding right now. Please try again in a moment.";
   }
 }
@@ -70,10 +100,13 @@ export function detectCrisis(message: string): boolean {
 
 export const CRISIS_RESPONSE = `I hear that you're in a lot of pain right now. Your life has value and there are people who want to help:
 
-National Crisis Hotline (24/7):
+**National Crisis Hotline (24/7):**
 📞 988 or 1-800-273-8255
 
-Crisis Text Line (24/7):
+**Crisis Text Line (24/7):**
 💬 Text HOME to 741741
+
+**International Association for Suicide Prevention:**
+🌐 https://www.iasp.info/resources/Crisis_Centres/
 
 These services are free, confidential, and available 24/7. Would you like to talk more about what's troubling you? I'm here to listen, but I also strongly encourage you to reach out to one of these professional services.`;

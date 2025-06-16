@@ -31,7 +31,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl z-50 overflow-hidden"
+      className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl z-50 overflow-hidden max-h-[80vh]"
     >
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
@@ -60,8 +60,8 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                 } hover:bg-gray-50`}
               >
                 <div className="flex justify-between items-start mb-1">
-                  <h4 className="font-medium text-gray-800">{notification.title}</h4>
-                  <span className="text-xs text-gray-500">
+                  <h4 className="font-medium text-gray-800 text-sm md:text-base pr-2">{notification.title}</h4>
+                  <span className="text-xs text-gray-500 flex-shrink-0">
                     {format(notification.timestamp, 'MMM d, h:mm a')}
                   </span>
                 </div>

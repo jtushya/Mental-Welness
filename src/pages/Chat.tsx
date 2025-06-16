@@ -52,8 +52,9 @@ const Chat = () => {
 
   const quickActions = [
     {
-      icon: <Lotus className="w-5 h-5" />,
-      label: "Start Relaxation",
+      icon: <Lotus className="w-4 h-4 md:w-5 md:h-5" />,
+      label: "Relaxation",
+      shortLabel: "Relax",
       gradient: "from-indigo-500 to-purple-500",
       hoverGradient: "from-indigo-600 to-purple-600",
       action: () => {
@@ -63,8 +64,9 @@ const Chat = () => {
       }
     },
     {
-      icon: <Wind className="w-5 h-5" />,
-      label: "Breathing Exercise",
+      icon: <Wind className="w-4 h-4 md:w-5 md:h-5" />,
+      label: "Breathing",
+      shortLabel: "Breathe",
       gradient: "from-cyan-500 to-blue-500",
       hoverGradient: "from-cyan-600 to-blue-600",
       action: () => {
@@ -74,8 +76,9 @@ const Chat = () => {
       }
     },
     {
-      icon: <Book className="w-5 h-5" />,
-      label: "Journal Entry",
+      icon: <Book className="w-4 h-4 md:w-5 md:h-5" />,
+      label: "Journal",
+      shortLabel: "Write",
       gradient: "from-amber-500 to-orange-500",
       hoverGradient: "from-amber-600 to-orange-600",
       action: () => {
@@ -369,7 +372,7 @@ const Chat = () => {
       <div className="flex-1 flex flex-col min-h-screen">
         <div className="fixed top-0 left-0 right-0 z-[60]">
           <div className="bg-white/80 backdrop-blur-md shadow-sm border-b">
-            <div className="p-4 flex items-center justify-between max-w-7xl mx-auto w-full">
+            <div className="p-3 md:p-4 flex items-center justify-between max-w-7xl mx-auto w-full">
               <button
                 onClick={() => setSidebarOpen(prev => !prev)}
                 className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
@@ -379,15 +382,15 @@ const Chat = () => {
                 <Menu className="w-5 h-5" />
               </button>
               
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-lg">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
-                  <span className="text-sm font-medium text-purple-700">
+              <div className="flex items-center space-x-2 md:space-x-4">
+                <div className="flex items-center space-x-2 bg-purple-50 px-2 md:px-3 py-1.5 rounded-lg">
+                  <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-purple-500" />
+                  <span className="text-xs md:text-sm font-medium text-purple-700">
                     {getCurrentTopicLabel()}
                   </span>
                 </div>
                 {selectedMood && (
-                  <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg">
+                  <div className="hidden sm:flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg">
                     <Smile className={`w-4 h-4 ${MOOD_COLORS[selectedMood as keyof typeof MOOD_COLORS]}`} />
                     <span className="text-sm font-medium text-gray-700">
                       {selectedMood}
@@ -400,17 +403,17 @@ const Chat = () => {
                     showHistory ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
-                  <History className="w-5 h-5" />
+                  <History className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pt-[60px] pb-[220px] p-4">
+        <div className="flex-1 overflow-y-auto pt-[60px] md:pt-[70px] pb-[200px] md:pb-[220px] p-3 md:p-4">
           <div className="max-w-7xl mx-auto w-full space-y-4">
             {!selectedTopic && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
                 {CHAT_TOPICS.map((topic) => {
                   const Icon = topic.icon;
                   return (
@@ -418,15 +421,15 @@ const Chat = () => {
                       key={topic.id}
                       onClick={() => handleTopicSelect(topic.id)}
                       whileHover={{ scale: 1.02 }}
-                      className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all"
+                      className="p-3 md:p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all"
                     >
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="p-2 bg-purple-50 rounded-lg">
-                          <Icon className="w-5 h-5 text-purple-600" />
+                      <div className="flex items-center space-x-2 md:space-x-3 mb-2">
+                        <div className="p-1.5 md:p-2 bg-purple-50 rounded-lg">
+                          <Icon className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
                         </div>
-                        <span className="font-medium text-gray-800">{topic.label}</span>
+                        <span className="font-medium text-gray-800 text-sm md:text-base">{topic.label}</span>
                       </div>
-                      <p className="text-sm text-gray-600">{topic.description}</p>
+                      <p className="text-xs md:text-sm text-gray-600">{topic.description}</p>
                     </motion.button>
                   );
                 })}
@@ -473,43 +476,46 @@ const Chat = () => {
         <div className="fixed bottom-0 left-0 right-0 border-t bg-white/80 backdrop-blur-sm" style={{ zIndex: 30 }}>
           <div className="max-w-7xl mx-auto w-full">
             {showMoodSelector && (
-              <div className="px-4 pt-4">
+              <div className="px-3 md:px-4 pt-3 md:pt-4">
                 <MoodSelector onMoodSelect={handleMoodSelect} />
               </div>
             )}
 
-            <div className="p-3 flex space-x-3 overflow-x-auto">
+            <div className="p-2 md:p-3 flex space-x-2 md:space-x-3 overflow-x-auto">
               {quickActions.map((action, index) => (
                 <motion.button
                   key={index}
                   onClick={action.action}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white shadow-md transition-all duration-200 bg-gradient-to-r ${action.gradient} hover:bg-gradient-to-r hover:${action.hoverGradient}`}
+                  className={`flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 rounded-lg text-white shadow-md transition-all duration-200 bg-gradient-to-r ${action.gradient} hover:bg-gradient-to-r hover:${action.hoverGradient} flex-shrink-0`}
                 >
-                  <div className="p-1 bg-white/20 rounded-full">
+                  <div className="p-0.5 md:p-1 bg-white/20 rounded-full">
                     {action.icon}
                   </div>
-                  <span className="font-medium whitespace-nowrap">{action.label}</span>
+                  <span className="font-medium whitespace-nowrap text-sm md:text-base">
+                    <span className="hidden sm:inline">{action.label}</span>
+                    <span className="sm:hidden">{action.shortLabel}</span>
+                  </span>
                 </motion.button>
               ))}
             </div>
 
-            <div className="p-4">
-              <form onSubmit={handleSubmit} className="flex space-x-4">
+            <div className="p-3 md:p-4">
+              <form onSubmit={handleSubmit} className="flex space-x-2 md:space-x-4">
                 <input
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 px-3 md:px-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm md:text-base"
                 />
                 <button
                   type="submit"
                   disabled={!isAuthenticated}
-                  className="px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 md:px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors flex items-center space-x-1 md:space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span>Send</span>
+                  <span className="hidden sm:inline text-sm md:text-base">Send</span>
                   <Send className="w-4 h-4" />
                 </button>
               </form>
@@ -524,7 +530,7 @@ const Chat = () => {
             initial={{ opacity: 0, x: '100%' }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
-            className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-lg z-[70] overflow-y-auto"
+            className="fixed right-0 top-0 bottom-0 w-full sm:w-80 bg-white shadow-lg z-[70] overflow-y-auto"
           >
             <div className="p-4 border-b sticky top-0 bg-white z-10">
               <div className="flex items-center justify-between mb-4">
@@ -559,7 +565,7 @@ const Chat = () => {
                       session.id === currentSessionId ? 'bg-purple-50' : ''
                     }`}
                   >
-                    <MessageSquare className="w-5 h-5 text-purple-500 mt-1" />
+                    <MessageSquare className="w-5 h-5 text-purple-500 mt-1 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-gray-800 truncate">
                         {session.title}
@@ -586,7 +592,7 @@ const Chat = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[80]"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[80] p-4"
           >
             {activeExercise === 'breathing' ? (
               <BreathingExercise

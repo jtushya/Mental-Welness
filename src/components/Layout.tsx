@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Coins, Phone, Users, BookOpen, UserCircle, LogOut } from 'lucide-react';
+import { Bell, Coins, Phone, Users, BookOpen, UserCircle, LogOut, Menu, X } from 'lucide-react';
 import { usePoints } from '../context/PointsContext';
 import { useNotifications } from '../components/NotificationsContext';
 import NameModal from './NameModal';
@@ -15,6 +15,7 @@ const Layout = () => {
   const [showModal, setShowModal] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { points } = usePoints();
   const { notifications, markAsRead, clearAll, unreadCount } = useNotifications();
   const location = useLocation();
@@ -49,7 +50,6 @@ const Layout = () => {
 
   const handleNotificationClick = (id: string) => {
     markAsRead(id);
-    // Handle navigation or other actions based on notification type
     const notification = notifications.find(n => n.id === id);
     if (notification?.link) {
       navigate(notification.link);
@@ -112,12 +112,13 @@ const Layout = () => {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-semibold text-purple-800">
+                <h1 className="text-xl md:text-2xl font-semibold text-purple-800">
                   Welcome, <span className="font-bold">{name || 'Guest'}</span>
                 </h1>
               </div>
-              <div className="flex items-center space-x-4">
-                {/* Support Buttons */}
+
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center space-x-4">
                 <button
                   onClick={handleCallSupport}
                   className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
@@ -141,13 +142,11 @@ const Layout = () => {
                   <span>Students Anonymous</span>
                 </button>
 
-                {/* Points */}
                 <div className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg">
                   <Coins className="text-yellow-500 w-5 h-5" />
                   <span className="font-medium text-gray-700">{points}</span>
                 </div>
 
-                {/* User Menu */}
                 <div className="relative user-menu">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
@@ -176,7 +175,6 @@ const Layout = () => {
                   )}
                 </div>
 
-                {/* Notifications */}
                 <div className="relative notifications-menu">
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
@@ -202,7 +200,100 @@ const Layout = () => {
                   </AnimatePresence>
                 </div>
               </div>
+
+              {/* Mobile Menu Button */}
+              <div className="lg:hidden flex items-center space-x-2">
+                <div className="flex items-center space-x-2 px-3 py-1 bg-white border border-gray-200 rounded-lg">
+                  <Coins className="text-yellow-500 w-4 h-4" />
+                  <span className="font-medium text-gray-700 text-sm">{points}</span>
+                </div>
+                
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  {showMobileMenu ? (
+                    <X className="w-6 h-6 text-gray-600" />
+                  ) : (
+                    <Menu className="w-6 h-6 text-gray-600" />
+                  )}
+                </button>
+              </div>
             </div>
+
+            {/* Mobile Menu */}
+            <AnimatePresence>
+              {showMobileMenu && (
+                <div className="lg:hidden mt-4 pt-4 border-t border-gray-200">
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => {
+                        handleCallSupport();
+                        setShowMobileMenu(false);
+                      }}
+                      className="flex items-center space-x-2 w-full px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                    >
+                      <Phone className="w-4 h-4" />
+                      <span>Speak to Us</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleMPower();
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 text-left"
+                    >
+                      MPower
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleStudentsAnonymous();
+                        setShowMobileMenu(false);
+                      }}
+                      className="flex items-center space-x-2 w-full px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Students Anonymous</span>
+                    </button>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          navigate('/statistics');
+                          setShowMobileMenu(false);
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-purple-50 rounded-lg"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Statistics</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <Bell className="w-5 h-5 text-gray-600" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         </header>
       )}
@@ -214,15 +305,17 @@ const Layout = () => {
       </div>
 
       <footer className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-center py-4 mt-8">
-        <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-lg font-semibold">Made by Tushya Jain</p>
-          </div>
-          <div>
-            <p className="text-sm">mail: <a href="mailto:techtushya@gmail.com" className="underline">techtushya@gmail.com</a></p>
-          </div>
-          <div>
-            <p className="text-sm">github: <a href="https://github.com/jtushya" target="_blank" rel="noopener noreferrer" className="underline">github.com/jtushya</a></p>
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-lg font-semibold">Made by Tushya Jain</p>
+            </div>
+            <div>
+              <p className="text-sm">mail: <a href="mailto:techtushya@gmail.com" className="underline">techtushya@gmail.com</a></p>
+            </div>
+            <div>
+              <p className="text-sm">github: <a href="https://github.com/jtushya" target="_blank" rel="noopener noreferrer" className="underline">github.com/jtushya</a></p>
+            </div>
           </div>
         </div>
       </footer>

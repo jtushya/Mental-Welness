@@ -6,10 +6,10 @@ import MoodSelector from '../components/MoodSelector';
 import TherapistCard from '../components/TherapistCard';
 
 const ContentCard = ({ title, description, icon: Icon, gradient, link }: any) => (
-  <a href={link} target="_blank" rel="noopener noreferrer" className={`block p-6 rounded-xl bg-gradient-to-r ${gradient} text-white`}>
-    <Icon className="w-8 h-8 mb-4" />
-    <h3 className="text-lg font-semibold mb-2">{title}</h3>
-    <p className="text-white/90 text-sm">{description}</p>
+  <a href={link} target="_blank" rel="noopener noreferrer" className={`block p-4 md:p-6 rounded-xl bg-gradient-to-r ${gradient} text-white hover:scale-105 transition-transform`}>
+    <Icon className="w-6 h-6 md:w-8 md:h-8 mb-3 md:mb-4" />
+    <h3 className="text-base md:text-lg font-semibold mb-2">{title}</h3>
+    <p className="text-white/90 text-xs md:text-sm">{description}</p>
   </a>
 );
 
@@ -53,7 +53,7 @@ const Home = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <QuoteSlider />
       
       <div className="flex justify-center">
@@ -65,12 +65,12 @@ const Home = () => {
       <TherapistCard />
 
       <section>
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Recommended for You</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4 md:mb-6">Recommended for You</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           <ActivityCard
             title="Focus Session"
             description="Improve concentration with guided meditation"
-            icon={<Brain className="w-8 h-8" />}
+            icon={<Brain className="w-6 h-6 md:w-8 md:h-8" />}
             points={50}
             gradient="from-blue-400 to-purple-500"
             duration={5}
@@ -79,7 +79,7 @@ const Home = () => {
           <ActivityCard
             title="Breathing Exercise"
             description="Calm your mind with deep breathing"
-            icon={<Wind className="w-8 h-8" />}
+            icon={<Wind className="w-6 h-6 md:w-8 md:h-8" />}
             points={30}
             gradient="from-green-400 to-teal-500"
             duration={3}
@@ -88,7 +88,7 @@ const Home = () => {
           <ActivityCard
             title="Bedtime Routine"
             description="Prepare for restful sleep"
-            icon={<Moon className="w-8 h-8" />}
+            icon={<Moon className="w-6 h-6 md:w-8 md:h-8" />}
             points={40}
             gradient="from-indigo-400 to-purple-500"
             duration={4}
@@ -98,8 +98,8 @@ const Home = () => {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Mindfulness Content Library</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4 md:mb-6">Mindfulness Content Library</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {contentCategories.map((category, index) => (
             <ContentCard key={index} {...category} />
           ))}
