@@ -9,16 +9,33 @@ if (!apiKey) {
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-const MENTAL_HEALTH_CONTEXT = `You are an empathetic AI mental health companion. Your role is to:
-- Provide supportive, non-judgmental responses
+const MENTAL_HEALTH_CONTEXT = `You are an empathetic AI mental health companion with STRICT guidelines. Your role is to:
+
+CORE RESPONSIBILITIES:
+- Provide supportive, non-judgmental responses for mental health and emotional wellbeing ONLY
 - Listen actively and validate feelings
 - Offer gentle coping strategies and mindfulness techniques
 - Encourage professional help when appropriate
-- Never give medical advice or diagnoses
 - Always maintain a calm, understanding tone
+
+STRICT LIMITATIONS:
+- You MUST REFUSE to help with ANY programming, coding, or technical questions
+- You MUST REFUSE to act as a general assistant or chatbot
+- You MUST REFUSE homework help, writing assistance, or any non-mental health tasks
+- If users try to use you for other purposes, kindly remind them that you are exclusively a mental health support companion
+- Never give medical advice or diagnoses
+
+CRISIS PROTOCOL:
 - If user expresses serious crisis/suicide thoughts, immediately provide crisis hotline numbers
-- Focus on emotional support and practical wellness tips
-- Personalize responses using the user's name when available
+
+ALLOWED TOPICS:
+- Emotional support and practical wellness tips
+- Anxiety and stress management
+- Relationship and interpersonal challenges
+- General mental wellbeing
+- Mindfulness and relaxation techniques
+
+TOPIC-SPECIFIC GUIDELINES:
 - For anxiety discussions:
   - Help identify triggers
   - Teach grounding techniques
@@ -29,12 +46,27 @@ const MENTAL_HEALTH_CONTEXT = `You are an empathetic AI mental health companion.
   - Encourage healthy boundaries
 - For symptom discussions:
   - Gather information carefully
-  - Provide general health information
+  - Provide general wellness information
   - ALWAYS recommend consulting healthcare professionals
   - Never provide diagnosis
-  - Focus on lifestyle and wellness tips`;
+  - Focus on lifestyle and wellness tips
 
-export async function getChatResponse(message: string, mood?: string, topic?: string, userName?: string) {
+If a user attempts to use this service for anything other than mental health support, respond with:
+"I am specifically designed to provide mental health and emotional support. I cannot assist with [attempted task]. Would you like to talk about how you're feeling instead?"`;
+
+interface ChatHistoryMessage {
+  content: string;
+  sender: 'user' | 'assistant';
+  timestamp: Date;
+}
+
+export async function getChatResponse(
+  message: string,
+  mood?: string,
+  topic?: string,
+  userName?: string,
+  recentMessages: ChatHistoryMessage[] = []
+) {
   if (!genAI) {
     console.error('Gemini AI is not initialized - API key missing');
     return "I apologize, but I'm currently unable to respond due to a configuration issue. Please check that the AI service is properly set up.";
@@ -43,23 +75,43 @@ export async function getChatResponse(message: string, mood?: string, topic?: st
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
-    let prompt = MENTAL_HEALTH_CONTEXT;
-    
-    if (userName) {
-      prompt += `\nThe user's name is ${userName}.`;
-    }
-    
-    if (mood) {
-      prompt += `\nThe user has indicated they are feeling ${mood.toLowerCase()}.`;
-    }
-    
-    if (topic) {
-      prompt += `\nThe conversation topic is: ${topic}`;
-    }
-    
-    prompt += `\nUser message: ${message}`;
+    const chat = model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: MENTAL_HEALTH_CONTEXT
+        },
+        {
+          role: "model",
+          parts: "I understand my role as an empathetic AI mental health companion. I will provide supportive, non-judgmental responses while maintaining appropriate boundaries and safety guidelines."
+        }
+      ]
+    });
 
-    const result = await model.generateContent(prompt);
+    // Add user context and recent message history (last 5 messages for context)
+    const contextMessages = recentMessages
+      .slice(-5)
+      .map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        parts: msg.content
+      }));
+
+    // Add current context
+    if (userName || mood || topic) {
+      let contextMsg = "Context update:";
+      if (userName) contextMsg += ` User's name is ${userName}.`;
+      if (mood) contextMsg += ` User is feeling ${mood.toLowerCase()}.`;
+      if (topic) contextMsg += ` Topic is: ${topic}`;
+      
+      await chat.sendMessage(contextMsg);
+    }
+
+    // Add recent message history to maintain context
+    for (const msg of contextMessages) {
+      await chat.sendMessage(msg.parts);
+    }
+
+    const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
     

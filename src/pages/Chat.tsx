@@ -359,6 +359,67 @@ const Chat = () => {
     scrollToBottom();
   }, [messages]);
 
+  const handleSendMessage = async (messageText: string) => {
+    if (!messageText.trim() || isTyping) return;
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      content: messageText,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
+    try {
+      // Convert messages to the format expected by getChatResponse
+      const recentMessages = messages.slice(-5).map(msg => ({
+        content: msg.content,
+        sender: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+        timestamp: msg.timestamp
+      }));
+
+      const response = await getChatResponse(
+        messageText,
+        selectedMood ?? undefined,
+        selectedTopic ?? undefined,
+        userName || undefined,
+        recentMessages
+      );
+
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        content: response,
+        sender: 'ai',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+
+      if (currentSessionId) {
+        await saveChatMessage(currentSessionId, userMessage);
+        await saveChatMessage(currentSessionId, aiMessage);
+      }
+
+      // Award points for engaging in conversation
+      addPoints(1);
+
+    } catch (error) {
+      console.error('Error in chat:', error);
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`,
+        content: "I apologize, but I'm having trouble responding right now. Please try again.",
+        sender: 'ai',
+        timestamp: new Date(),
+        isError: true
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen flex">
       <BackgroundAnimation />
